@@ -22,7 +22,7 @@ jobs:
         run: |
           set -euo pipefail
 
-          ZIP_FILE="CondenserChest-26.2-sneak-rightclick-emc-source.zip"
+          ZIP_FILE="CondenserChest-26.2-sneak-rightclick-emc-fixed-source.zip"
 
           if [ ! -f "$ZIP_FILE" ]; then
             echo "::error::Source ZIP not found: $ZIP_FILE"
