@@ -1,75 +1,63 @@
-
 name: Build Condenser Chest
 
 on:
-  push:
-    branches: ["**"]
-  workflow_dispatch:
+push:
+branches: [”**”]
+workflow_dispatch:
 
 permissions:
-  contents: read
+contents: read
 
 jobs:
-  build:
-    name: Build mod JAR
-    runs-on: ubuntu-latest
+build:
+name: Build mod JAR
+runs-on: ubuntu-latest
 
-    steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Extract source ZIP
-        shell: bash
-        run: |
-          set -e
-
-          ZIP_FILE="$(find . -maxdepth 1 -type f \
-            -name 'CondenserChest-26.2-all-suggested-output-restrictions-source.zip' \
-            -print -quit)"
-
-          if [ -z "$ZIP_FILE" ]; then
-            echo "::error::Source ZIP not found in repository root."
-            ls -la
-            exit 1
-          fi
-
-          mkdir -p source
-          unzip -q "$ZIP_FILE" -d source
-
-          BUILD_FILE="$(find source -type f \
-            -name build.gradle -print -quit)"
-
-          if [ -z "$BUILD_FILE" ]; then
-            echo "::error::build.gradle was not found inside the ZIP."
-            find source -maxdepth 4 -type f
-            exit 1
-          fi
-
-          PROJECT_DIR="$(dirname "$BUILD_FILE")"
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Found project: $PROJECT_DIR"
-
-      - name: Set up Java 25
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: "25"
-
-      - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: "9.7.0"
-
-      - name: Build mod
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle build --no-daemon
-
-      - name: Upload mod JAR
-        uses: actions/upload-artifact@v4
-        with:
-          name: condenser-chest-build
-          path: |
-            ${{ env.PROJECT_DIR }}/build/libs/*.jar
-            !${{ env.PROJECT_DIR }}/build/libs/*-sources.jar
-          if-no-files-found: error
-          retention-days: 14
+steps:
+  - name: Check out repository
+    uses: actions/checkout@v4
+  - name: Extract source ZIP
+    shell: bash
+    run: |
+      set -euo pipefail
+      ZIP_FILE="CondenserChest-26.2-sneak-rightclick-emc-source.zip"
+      if [ ! -f "$ZIP_FILE" ]; then
+        echo "::error::Source ZIP not found: $ZIP_FILE"
+        echo "Files in repository root:"
+        ls -la
+        exit 1
+      fi
+      mkdir -p source
+      unzip -q "$ZIP_FILE" -d source
+      BUILD_FILE="$(find source -type f -name 'build.gradle' -print -quit)"
+      if [ -z "$BUILD_FILE" ]; then
+        echo "::error::build.gradle was not found inside the ZIP."
+        echo "Files extracted from the ZIP:"
+        find source -maxdepth 5 -type f
+        exit 1
+      fi
+      PROJECT_DIR="$(dirname "$BUILD_FILE")"
+      echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
+      echo "Found Gradle project at: $PROJECT_DIR"
+      ls -la "$PROJECT_DIR"
+  - name: Set up Java 25
+    uses: actions/setup-java@v5
+    with:
+      distribution: temurin
+      java-version: "25"
+  - name: Set up Gradle
+    uses: gradle/actions/setup-gradle@v4
+    with:
+      gradle-version: "9.7.0"
+  - name: Build mod
+    working-directory: ${{ env.PROJECT_DIR }}
+    run: gradle build --no-daemon
+  - name: Upload mod JAR
+    uses: actions/upload-artifact@v4
+    with:
+      name: condenser-chest-build
+      path: |
+        ${{ env.PROJECT_DIR }}/build/libs/*.jar
+        !${{ env.PROJECT_DIR }}/build/libs/*-sources.jar
+      if-no-files-found: error
+      retention-days: 14
