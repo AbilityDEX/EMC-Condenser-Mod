@@ -1,1 +1,68 @@
 
+name: Build Condenser Chest
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build mod JAR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: gradle
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "9.7.0"
+
+      - name: Find project directory
+        id: project
+        shell: bash
+        run: |
+          mapfile -t files < <(find . -type f -name build.gradle \
+            -not -path './.git/*' \
+            -not -path './.gradle/*' | sort)
+
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "::error::Expected exactly one build.gradle file."
+            printf '%s\n' "${files[@]}"
+            exit 1
+          fi
+
+          project_dir="$(dirname "${files[0]}")"
+          project_dir="${project_dir#./}"
+
+          echo "dir=$project_dir" >> "$GITHUB_OUTPUT"
+          echo "Building project in: $project_dir"
+
+      - name: Build mod
+        working-directory: ${{ steps.project.outputs.dir }}
+        run: gradle build --no-daemon
+
+      - name: Upload mod JAR
+        uses: actions/upload-artifact@v4
+        with:
+          name: condenser-chest-build
+          path: |
+            ${{ steps.project.outputs.dir }}/build/libs/*.jar
+            !${{ steps.project.outputs.dir }}/build/libs/*-sources.jar
+          if-no-files-found: error
+          retention-days: 14
+
