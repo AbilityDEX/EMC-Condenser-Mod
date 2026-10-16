@@ -22,10 +22,11 @@ jobs:
         run: |
           set -euo pipefail
 
-          ZIP_FILE="CondenserChest-26.2-sneak-rightclick-emc-fixed-source.zip"
+          ZIP_FILE="CondenserChest-26.2-sneak-jump-emc-source.zip"
 
           if [ ! -f "$ZIP_FILE" ]; then
             echo "::error::Source ZIP not found: $ZIP_FILE"
+            echo "Files in repository root:"
             ls -la
             exit 1
           fi
